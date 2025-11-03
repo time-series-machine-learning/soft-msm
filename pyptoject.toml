@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>61", "wheel", "toml", "build"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soft-msm"
+version = "0.1"
+description = "Soft MSM"
+readme = { file = "README.md", content-type = "text/markdown" }
+authors = [{ name = "Christopher Holder" }]
+requires-python = ">=3.11"
+
+dependencies = [
+    "aeon@git+https://github.com/aeon-toolkit/aeon@soft-msm#egg=aeon",
+    "matplotlib",
+    "seaborn",
+    "tsml-eval@git+https://github.com/time-series-machine-learning/tsml-eval@main#egg=tsml-eval"
+
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "flake8",
+    "mypy",
+    "pytest",
+    "pytest-cov",
+    "pytest-xdist",
+    "pytest-timeout",
+    "pytest-rerunfailures",
+    "pre-commit"
+]
+
+[tool.setuptools]
+packages = ["soft_msm"]
+
+[tool.ruff.lint]
+select = ["D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.pytest.ini_options]
+testpaths = [
+    "soft_msm"
+]
+addopts = '''
+    --doctest-modules
+    --durations 20
+    --timeout 600
+    --showlocals
+    --dist worksteal
+    --reruns 2
+    --only-rerun "crashed while running"
+    -v
+'''
+filterwarnings = '''
+    ignore::UserWarning
+    ignore:numpy.dtype size changed
+    ignore:numpy.ufunc size changed
+'''
