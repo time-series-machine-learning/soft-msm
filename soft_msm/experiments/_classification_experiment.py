@@ -138,7 +138,7 @@ def run_one(
     )
 
 
-RUN_LOCALLY = True
+RUN_LOCALLY = False
 
 if __name__ == "__main__":
     """
@@ -191,18 +191,14 @@ if __name__ == "__main__":
         resample_id = args.resample_id
         n_jobs = args.n_jobs
 
-    # Parse grids (empty -> no sweep for that param)
     c_list = [s.strip() for s in c_csv.split(",") if s.strip()] if c_csv else []
     g_list = [s.strip() for s in gamma_csv.split(",") if s.strip()] if gamma_csv else []
 
-    # Provide sensible defaults if the user wants a sweep but forgot to pass lists
-    # (No harm if lists are empty; the grid logic will just do a single run.)
     if distance.endswith("msm") and not c_list:
-        c_list = ["1.0"]  # default single value if none provided
+        c_list = ["1.0"]
     if distance.startswith("soft_") and not g_list:
-        g_list = ["0.1"]  # default single value if none provided
+        g_list = ["0.1"]
 
-    # Iterate over the grid appropriate for the distance
     for c_val, g_val in _grid_for_distance(distance, c_list, g_list):
         run_one(
             dataset=dataset,
