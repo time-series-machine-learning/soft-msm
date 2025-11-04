@@ -14,8 +14,8 @@ dependencies = [
     "aeon@git+https://github.com/aeon-toolkit/aeon@soft-msm#egg=aeon",
     "matplotlib",
     "seaborn",
-    "tsml-eval@git+https://github.com/time-series-machine-learning/tsml-eval@main#egg=tsml-eval"
-
+    "tsml-eval@git+https://github.com/time-series-machine-learning/tsml-eval@main#egg=tsml-eval",
+    "python-dotenv"
 ]
 
 [project.optional-dependencies]
