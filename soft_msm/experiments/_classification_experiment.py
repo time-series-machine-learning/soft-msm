@@ -112,7 +112,7 @@ def run_classification_experiment(
     )
 
 
-RUN_LOCALLY = True
+RUN_LOCALLY = False
 
 if __name__ == "__main__":
     """
