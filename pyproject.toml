@@ -8,7 +8,7 @@ version = "0.1"
 description = "Soft MSM"
 readme = { file = "README.md", content-type = "text/markdown" }
 authors = [{ name = "Christopher Holder" }]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 
 dependencies = [
     "aeon@git+https://github.com/aeon-toolkit/aeon@soft-msm#egg=aeon",
