@@ -1,20 +1,21 @@
 import math
+
 import pytest
 import torch
-
+from aeon.distances.elastic.soft import (
+    soft_dtw_alignment_matrix as aeon_soft_dtw_alignment_matrix,
+)
 from aeon.distances.elastic.soft import (
     soft_dtw_distance,
-    soft_dtw_alignment_matrix as aeon_soft_dtw_alignment_matrix,
-    soft_dtw_grad_x as aeon_soft_dtw_grad_x,
 )
+from aeon.distances.elastic.soft import soft_dtw_grad_x as aeon_soft_dtw_grad_x
 
 from soft_msm.torch import (
     SoftDTWLoss,
     soft_dtw_alignment_matrix,
     soft_dtw_grad_x,
 )
-from soft_msm.torch.tests._utils import check_arrays_close, \
-    check_values_close
+from soft_msm.torch.tests._utils import check_arrays_close, check_values_close
 
 DEVICES = ["cpu"]
 
@@ -26,13 +27,17 @@ if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
 
 GAMMAS = [0.05, 0.1, 0.25, 0.5, 0.75, 1.0]
 
+
 @pytest.mark.parametrize("device", DEVICES)
 @pytest.mark.parametrize("gamma", GAMMAS)
-@pytest.mark.parametrize("C,T,U", [
-    (1, 16, 16),
-    (1, 20, 15),
-    (3, 10, 12),
-])
+@pytest.mark.parametrize(
+    "C,T,U",
+    [
+        (1, 16, 16),
+        (1, 20, 15),
+        (3, 10, 12),
+    ],
+)
 def test_soft_dtw_loss_equivalence(device, gamma, C, T, U):
     torch.manual_seed(0)
     x = torch.randn(1, C, T, device=device, requires_grad=True)

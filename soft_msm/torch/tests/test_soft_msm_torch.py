@@ -1,15 +1,15 @@
 import pytest
 import torch
-
+from aeon.distances.elastic.soft import (
+    soft_msm_alignment_matrix as aeon_soft_msm_alignment_matrix,
+)
 from aeon.distances.elastic.soft import (
     soft_msm_distance,
-    soft_msm_alignment_matrix as aeon_soft_msm_alignment_matrix,
-    soft_msm_grad_x as aeon_soft_msm_grad_x,
 )
+from aeon.distances.elastic.soft import soft_msm_grad_x as aeon_soft_msm_grad_x
 
-from soft_msm.torch.tests._utils import check_arrays_close, check_values_close
 from soft_msm.torch import SoftMSMLoss, soft_msm_alignment_matrix, soft_msm_grad_x
-
+from soft_msm.torch.tests._utils import check_arrays_close, check_values_close
 
 DEVICES = ["cpu"]
 if torch.cuda.is_available():
@@ -24,11 +24,14 @@ CS = [0.25, 0.5, 1.0, 2.0]
 @pytest.mark.parametrize("device", DEVICES)
 @pytest.mark.parametrize("gamma", GAMMAS)
 @pytest.mark.parametrize("c", CS)
-@pytest.mark.parametrize("C,T,U", [
-    (1, 16, 16),
-    (1, 20, 15),
-    (3, 10, 12),
-])
+@pytest.mark.parametrize(
+    "C,T,U",
+    [
+        (1, 16, 16),
+        (1, 20, 15),
+        (3, 10, 12),
+    ],
+)
 def test_soft_msm_loss_equivalence(device, gamma, c, C, T, U):
     torch.manual_seed(0)
     x = torch.randn(1, C, T, device=device, requires_grad=True, dtype=torch.float32)

@@ -172,7 +172,7 @@ def run_clustering_experiment(
     )
 
 
-RUN_LOCALLY = True
+RUN_LOCALLY = False
 
 if __name__ == "__main__":
     """NOTE: To run with command line arguments, set RUN_LOCALLY to False."""

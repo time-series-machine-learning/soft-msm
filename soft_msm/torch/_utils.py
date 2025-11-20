@@ -1,5 +1,6 @@
 import torch
 
+
 def _softmin2(a: torch.Tensor, b: torch.Tensor, gamma: float) -> torch.Tensor:
     """
     Smooth minimum of two tensors.
@@ -20,7 +21,9 @@ def _softmin2(a: torch.Tensor, b: torch.Tensor, gamma: float) -> torch.Tensor:
     return -gamma * torch.logsumexp(-v / gamma, dim=0)
 
 
-def _softmin3(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: float) -> torch.Tensor:
+def _softmin3(
+    a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: float
+) -> torch.Tensor:
     """
     Smooth minimum of three tensors.
 
@@ -38,6 +41,7 @@ def _softmin3(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: float) -
     """
     v = torch.stack((a, b, c), dim=0)
     return -gamma * torch.logsumexp(-v / gamma, dim=0)
+
 
 def _pairwise_sq_dists(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     """

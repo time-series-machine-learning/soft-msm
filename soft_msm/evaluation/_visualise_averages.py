@@ -1,15 +1,14 @@
 from pathlib import Path
 
-import numpy as np
 import matplotlib.pyplot as plt
-
+import numpy as np
 from aeon.clustering.averaging import elastic_barycenter_average
-from soft_msm.experiments._utils import (
-    load_dataset_from_file,
-    load_and_validate_env,
-    get_averaging_params,
-)
 
+from soft_msm.experiments._utils import (
+    get_averaging_params,
+    load_and_validate_env,
+    load_dataset_from_file,
+)
 
 if __name__ == "__main__":
     # --- Load data ---
@@ -68,7 +67,7 @@ if __name__ == "__main__":
         {**get_averaging_params("soft"), "gamma": 0.001, "distance": "soft_msm"},
         {**get_averaging_params("soft"), "gamma": 0.001, "distance": "soft_dtw"},
         {**get_averaging_params("petitjean"), "distance": "msm"},
-        {**get_averaging_params("subgradient"), "distance": "msm"}
+        {**get_averaging_params("subgradient"), "distance": "msm"},
     ]
 
     # --- Compute barycenters ---

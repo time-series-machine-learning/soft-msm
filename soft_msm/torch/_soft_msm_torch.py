@@ -1,16 +1,23 @@
 # soft_msm/torch/_soft_msm_torch.py
 from typing import Tuple
+
 import torch
 from torch import nn
 
 # -------------------------- helpers (softmins) --------------------------
 
-def _softmin3(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: float) -> torch.Tensor:
+
+def _softmin3(
+    a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: float
+) -> torch.Tensor:
     """softmin(a,b,c) = -γ logsumexp([-a/γ, -b/γ, -c/γ])"""
     stack = torch.stack((-a / gamma, -b / gamma, -c / gamma), dim=0)
     return -gamma * torch.logsumexp(stack, dim=0)
 
-def _softmin3_scalar(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: float) -> torch.Tensor:
+
+def _softmin3_scalar(
+    a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: float
+) -> torch.Tensor:
     """Scalar softmin3 with fewer ops than stack+logsumexp for inner loop."""
     s1 = -a / gamma
     s2 = -b / gamma
@@ -19,11 +26,15 @@ def _softmin3_scalar(a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: f
     z = torch.exp(s1 - m) + torch.exp(s2 - m) + torch.exp(s3 - m)
     return -gamma * (torch.log(z) + m)
 
+
 def _softmin2(a: torch.Tensor, b: torch.Tensor, gamma: float) -> torch.Tensor:
     stack = torch.stack((-a / gamma, -b / gamma), dim=0)
     return -gamma * torch.logsumexp(stack, dim=0)
 
-def _softmin2_vec_scalar_first(t1_scalar: torch.Tensor, t2_vec: torch.Tensor, gamma: float):
+
+def _softmin2_vec_scalar_first(
+    t1_scalar: torch.Tensor, t2_vec: torch.Tensor, gamma: float
+):
     """Vectorized softmin2 when first arg is scalar and second is vector."""
     s1 = -t1_scalar / gamma
     s2 = -t2_vec / gamma
@@ -31,7 +42,9 @@ def _softmin2_vec_scalar_first(t1_scalar: torch.Tensor, t2_vec: torch.Tensor, ga
     z = torch.exp(s1 - m) + torch.exp(s2 - m)
     return -gamma * (torch.log(z) + m)
 
+
 # -------------------- parameter-free between-ness gate --------------------
+
 
 def _between_gate(a: torch.Tensor, b: torch.Tensor, eps: float = 1e-9) -> torch.Tensor:
     """
@@ -42,7 +55,9 @@ def _between_gate(a: torch.Tensor, b: torch.Tensor, eps: float = 1e-9) -> torch.
     eps_t = torch.as_tensor(eps, dtype=u.dtype, device=u.device)
     return 0.5 * (1.0 - u / torch.sqrt(u * u + eps_t))
 
+
 # ----------------------- transition cost (no alpha) -----------------------
+
 
 def _trans_cost(
     x_val: torch.Tensor,
@@ -54,23 +69,25 @@ def _trans_cost(
     a = x_val - y_prev
     b = x_val - z_other
     g = _between_gate(a, b)
-    base = _softmin2(a * a, b * b, gamma)       # ≈ min((x-y)^2, (x-z)^2)
+    base = _softmin2(a * a, b * b, gamma)  # ≈ min((x-y)^2, (x-z)^2)
     return c + (1.0 - g) * base
+
 
 def _trans_cost_row_up(xi, xim1, y_slice, c: float, gamma: float):
     # x_val=xi (scalar), y_prev=xim1 (scalar), z_other=yj (vector)
-    a = xi - xim1            # scalar
-    b = xi - y_slice         # vector
+    a = xi - xim1  # scalar
+    b = xi - y_slice  # vector
     g = _between_gate(a, b)
-    d_same = a * a           # scalar
-    d_cross = b * b          # vector
+    d_same = a * a  # scalar
+    d_cross = b * b  # vector
     base = _softmin2_vec_scalar_first(d_same, d_cross, gamma)  # vector
     return c + (1.0 - g) * base
 
+
 def _trans_cost_row_left(y_slice, y_prev_slice, xi, c: float, gamma: float):
     # x_val=yj (vector), y_prev=y_{j-1} (vector), z_other=xi (scalar)
-    a = y_slice - y_prev_slice    # vector
-    b = y_slice - xi              # vector
+    a = y_slice - y_prev_slice  # vector
+    b = y_slice - xi  # vector
     g = _between_gate(a, b)
     s1 = -(a * a) / gamma
     s2 = -(b * b) / gamma
@@ -79,14 +96,16 @@ def _trans_cost_row_left(y_slice, y_prev_slice, xi, c: float, gamma: float):
     base = -gamma * (torch.log(z) + m)
     return c + (1.0 - g) * base
 
+
 # -------------------- 1D core (your kernel) --------------------
+
 
 def _soft_msm_torch_1d(
     x: torch.Tensor,
     y: torch.Tensor,
     *,
     c: float = 1.0,
-    gamma: float = 1.0,   # > 0
+    gamma: float = 1.0,  # > 0
     window: int | None = None,  # Sakoe–Chiba half-width
 ) -> torch.Tensor:
     """
@@ -146,12 +165,12 @@ def _soft_msm_torch_1d(
             continue
 
         xi, xim1 = x[i], x[i - 1]
-        y_cur = y[j_lo : j_hi + 1]      # [L]
-        y_prev = y[j_lo - 1 : j_hi]     # [L]
+        y_cur = y[j_lo : j_hi + 1]  # [L]
+        y_prev = y[j_lo - 1 : j_hi]  # [L]
 
-        up_cost = _trans_cost_row_up(xi, xim1, y_cur, c, gamma)          # [L]
-        left_cost = _trans_cost_row_left(y_cur, y_prev, xi, c, gamma)    # [L]
-        match = (xi - y_cur).pow(2)                                      # [L]
+        up_cost = _trans_cost_row_up(xi, xim1, y_cur, c, gamma)  # [L]
+        left_cost = _trans_cost_row_left(y_cur, y_prev, xi, c, gamma)  # [L]
+        match = (xi - y_cur).pow(2)  # [L]
 
         Cijm1 = C[i, j_lo - 1]
         for t in range(y_cur.numel()):
@@ -165,7 +184,9 @@ def _soft_msm_torch_1d(
 
     return C[n - 1, m - 1]
 
+
 # -------------------- batched, multichannel DP --------------------
+
 
 def _soft_msm_costs_batched(
     x: torch.Tensor,  # (B, C, T)
@@ -186,15 +207,19 @@ def _soft_msm_costs_batched(
     for ch in range(C):
         # per-batch loop to reuse your 1D kernel; T/U are small in tests so OK
         for b in range(B):
-            costs[b] = costs[b] + _soft_msm_torch_1d(x[b, ch], y[b, ch], c=c, gamma=gamma)
+            costs[b] = costs[b] + _soft_msm_torch_1d(
+                x[b, ch], y[b, ch], c=c, gamma=gamma
+            )
     return costs  # (B,)
+
 
 # -------------------- alignment (expected diag match occupancy) --------------------
 
+
 def _soft_msm_costs_from_M_batched(
-    M: torch.Tensor,     # (B, C, T, U) diagonal-match matrix (leaf)
-    x: torch.Tensor,     # (B, C, T) detached (for transitions)
-    y: torch.Tensor,     # (B, C, U) detached
+    M: torch.Tensor,  # (B, C, T, U) diagonal-match matrix (leaf)
+    x: torch.Tensor,  # (B, C, T) detached (for transitions)
+    y: torch.Tensor,  # (B, C, U) detached
     c: float,
     gamma: float,
 ) -> torch.Tensor:
@@ -214,11 +239,15 @@ def _soft_msm_costs_from_M_batched(
             cm[0, 0] = M[b, ch, 0, 0]
             # first column
             for i in range(1, T):
-                trans_v = _trans_cost(x[b, ch, i], x[b, ch, i - 1], y[b, ch, 0], c=c, gamma=gamma)
+                trans_v = _trans_cost(
+                    x[b, ch, i], x[b, ch, i - 1], y[b, ch, 0], c=c, gamma=gamma
+                )
                 cm[i, 0] = cm[i - 1, 0] + trans_v
             # first row
             for j in range(1, U):
-                trans_h = _trans_cost(y[b, ch, j], y[b, ch, j - 1], x[b, ch, 0], c=c, gamma=gamma)
+                trans_h = _trans_cost(
+                    y[b, ch, j], y[b, ch, j - 1], x[b, ch, 0], c=c, gamma=gamma
+                )
                 cm[0, j] = cm[0, j - 1] + trans_h
             # interior
             for i in range(1, T):
@@ -234,10 +263,13 @@ def _soft_msm_costs_from_M_batched(
             costs[b] = costs[b] + cm[T - 1, U - 1]
     return costs  # (B,)
 
+
 def _device_supports_fp64(t: torch.Tensor) -> bool:
     return t.is_cpu or t.is_cuda  # MPS does not
 
+
 # ------------------------------- public API --------------------------------
+
 
 class SoftMSMLoss(nn.Module):
     """
@@ -260,7 +292,9 @@ class SoftMSMLoss(nn.Module):
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         # device-native (keeps autograd)
-        costs_dev = _soft_msm_costs_batched(x.to(x.dtype), y.to(y.dtype), c=self.c, gamma=self.gamma)
+        costs_dev = _soft_msm_costs_batched(
+            x.to(x.dtype), y.to(y.dtype), c=self.c, gamma=self.gamma
+        )
 
         if _device_supports_fp64(x):
             costs = costs_dev
@@ -270,9 +304,13 @@ class SoftMSMLoss(nn.Module):
                 # two-step move avoids MPS fp64 conversion error
                 x64 = x.detach().to("cpu").to(torch.float64)
                 y64 = y.detach().to("cpu").to(torch.float64)
-                costs_cpu64 = _soft_msm_costs_batched(x64, y64, c=self.c, gamma=self.gamma)
+                costs_cpu64 = _soft_msm_costs_batched(
+                    x64, y64, c=self.c, gamma=self.gamma
+                )
             # value override, gradient from device graph
-            costs = costs_cpu64.to(x.device, dtype=costs_dev.dtype) + (costs_dev - costs_dev.detach())
+            costs = costs_cpu64.to(x.device, dtype=costs_dev.dtype) + (
+                costs_dev - costs_dev.detach()
+            )
 
         if self.reduction == "mean":
             return costs.mean()
@@ -280,12 +318,13 @@ class SoftMSMLoss(nn.Module):
             return costs.sum()
         return costs
 
+
 def soft_msm_alignment_matrix(
     x: torch.Tensor,
     y: torch.Tensor,
     c: float = 1.0,
     gamma: float = 1.0,
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Expected diagonal-match occupancy E and Soft-MSM cost (detached).
       E : (B, T, U), summed over channels (matches Aeon)
@@ -299,7 +338,9 @@ def soft_msm_alignment_matrix(
     M.requires_grad_(True)
 
     s64 = _soft_msm_costs_from_M_batched(M, x64, y64, c=c, gamma=gamma)  # (B,)
-    (E_per_channel,) = torch.autograd.grad(s64.sum(), M, retain_graph=False, create_graph=False)
+    (E_per_channel,) = torch.autograd.grad(
+        s64.sum(), M, retain_graph=False, create_graph=False
+    )
     E64 = E_per_channel.sum(dim=1)  # (B, T, U)
 
     # Move back to caller device/dtype (values only; grads not needed)
@@ -307,16 +348,19 @@ def soft_msm_alignment_matrix(
     s = s64.to(x.device, dtype=torch.float64).detach()
     return E, s
 
+
 @torch.no_grad()
 def soft_msm_grad_x(
     x: torch.Tensor,
     y: torch.Tensor,
     c: float = 1.0,
     gamma: float = 1.0,
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Gradient of Soft-MSM cost w.r.t. x, computed on CPU float64 for equivalence.
-    Returns:
+
+    Returns
+    -------
       dx : (B, C, T) in x.dtype on x.device
       s  : (B,) float64 on x.device
     """
@@ -324,11 +368,14 @@ def soft_msm_grad_x(
     y64 = y.detach().to("cpu").to(torch.float64)
 
     s64 = _soft_msm_costs_batched(x64, y64, c=c, gamma=gamma)  # (B,)
-    (dx64,) = torch.autograd.grad(s64.sum(), x64, retain_graph=False, create_graph=False)
+    (dx64,) = torch.autograd.grad(
+        s64.sum(), x64, retain_graph=False, create_graph=False
+    )
 
     dx = dx64.to(x.device, dtype=x.dtype)
     s = s64.to(x.device, dtype=torch.float64)
     return dx, s
+
 
 def soft_msm_alignment_matrix(**kwargs):
     pass

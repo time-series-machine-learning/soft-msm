@@ -3,7 +3,7 @@ from typing import Tuple
 import torch
 from torch import nn
 
-from soft_msm.torch._utils import _softmin3, _pairwise_sq_dists
+from soft_msm.torch._utils import _pairwise_sq_dists, _softmin3
 
 
 def _soft_dtw_from_D(D: torch.Tensor, gamma: float) -> torch.Tensor:
@@ -31,7 +31,7 @@ def _soft_dtw_from_D(D: torch.Tensor, gamma: float) -> torch.Tensor:
         curr = i & 1
         R[:, curr, 0] = float("inf")
         for j in range(1, U + 1):
-            up   = R[:, prev, j]
+            up = R[:, prev, j]
             diag = R[:, prev, j - 1]
             left = R[:, curr, j - 1]
             R[:, curr, j] = D[:, i - 1, j - 1] + _softmin3(up, diag, left, gamma)
@@ -91,7 +91,7 @@ class SoftDTWLoss(nn.Module):
 
 def soft_dtw_alignment_matrix(
     x: torch.Tensor, y: torch.Tensor, gamma: float = 1.0
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Compute the expected alignment matrix and Soft-DTW cost.
 
@@ -120,7 +120,7 @@ def soft_dtw_alignment_matrix(
 @torch.no_grad()
 def soft_dtw_grad_x(
     x: torch.Tensor, y: torch.Tensor, gamma: float = 1.0
-) -> Tuple[torch.Tensor, torch.Tensor]:
+) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Compute the gradient of the Soft-DTW cost with respect to x.
 
