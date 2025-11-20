@@ -20,15 +20,37 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "black",
-    "flake8",
-    "mypy",
-    "pytest",
-    "pytest-cov",
-    "pytest-xdist",
-    "pytest-timeout",
-    "pytest-rerunfailures",
-    "pre-commit"
+  "black",
+  "flake8",
+  "mypy",
+  "pytest",
+  "pytest-cov",
+  "pytest-xdist",
+  "pytest-timeout",
+  "pytest-rerunfailures",
+  "pre-commit"
+]
+
+pytorch = [
+  "torch>=2.3"
+]
+
+jax = [
+  "jax>=0.4.31",
+  "jaxlib>=0.4.31"
+]
+
+tensorflow = [
+  "tensorflow>=2.15; platform_system == 'Linux' and platform_machine == 'x86_64' and python_version < '3.13'",
+  "tensorflow-macos>=2.15; platform_system == 'Darwin' and platform_machine == 'arm64' and python_version < '3.13'"
+]
+
+all = [
+  "torch>=2.3",
+  "jax>=0.4.31",
+  "jaxlib>=0.4.31",
+  "tensorflow>=2.15; platform_system == 'Linux' and platform_machine == 'x86_64' and python_version < '3.13'",
+  "tensorflow-macos>=2.15; platform_system == 'Darwin' and platform_machine == 'arm64' and python_version < '3.13'"
 ]
 
 [tool.setuptools]

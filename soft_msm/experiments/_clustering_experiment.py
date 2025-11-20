@@ -77,32 +77,78 @@ def run_clustering_experiment(
     )
     n_clusters = np.unique(y_train).size
 
-    # Validate the distance is compatible with the averaging method.
-    validate_distance_vs_averaging_method(distance, averaging_method)
+    # # Validate the distance is compatible with the averaging method.
+    # validate_distance_vs_averaging_method(distance, averaging_method)
+    #
+    # # Get the default distance parameters.
+    # distance_params = get_distance_default_params(distance, X_train)
+    #
+    # # Get the default averaging parameters.
+    # average_params = get_averaging_params(averaging_method)
+    #
+    # # Combine the distance and averaging parameters.
+    # average_params = {"distance": distance, **average_params, **distance_params}
+    #
+    # clusterer = TimeSeriesKMeans(
+    #     n_clusters=n_clusters,
+    #     init="kmeans++",
+    #     distance=distance,
+    #     n_init=1,
+    #     max_iter=300,
+    #     tol=1e-6,
+    #     verbose=True,
+    #     random_state=resample_id,
+    #     averaging_method=averaging_method,
+    #     distance_params=distance_params,
+    #     average_params=average_params,
+    #     n_jobs=n_jobs,
+    # )
 
-    # Get the default distance parameters.
-    distance_params = get_distance_default_params(distance, X_train)
-
-    # Get the default averaging parameters.
-    average_params = get_averaging_params(averaging_method)
-
-    # Combine the distance and averaging parameters.
-    average_params = {"distance": distance, **average_params, **distance_params}
-
-    clusterer = TimeSeriesKMeans(
-        n_clusters=n_clusters,
-        init="kmeans++",
-        distance=distance,
-        n_init=1,
-        max_iter=300,
-        tol=1e-6,
-        verbose=True,
-        random_state=resample_id,
-        averaging_method=averaging_method,
-        distance_params=distance_params,
-        average_params=average_params,
-        n_jobs=n_jobs,
-    )
+    if distance == "soft_dtw":
+        clusterer = TimeSeriesKMeans(
+            n_clusters=n_clusters,
+            init="kmeans++",
+            distance="dtw",
+            n_init=1,
+            max_iter=300,
+            tol=1e-6,
+            verbose=True,
+            random_state=resample_id,
+            averaging_method="soft",
+            distance_params=None,
+            average_params={
+                "max_iters": 100,
+                "tol": 1e-6,
+                "distance": "soft_dtw",
+                "gamma": 0.001,
+            },
+            n_jobs=n_jobs,
+        )
+    elif distance == "soft_msm":
+        clusterer = TimeSeriesKMeans(
+            n_clusters=n_clusters,
+            init="kmeans++",
+            distance="msm",
+            n_init=1,
+            max_iter=300,
+            tol=1e-6,
+            verbose=True,
+            random_state=resample_id,
+            averaging_method="soft",
+            distance_params={
+                "c": 1.0,
+            },
+            average_params={
+                "max_iters": 100,
+                "tol": 1e-6,
+                "distance": "soft_dtw",
+                "gamma": 0.001,
+                "c": 1.0,
+            },
+            n_jobs=n_jobs,
+        )
+    else:
+        raise ValueError(f"Unsupported distance: {distance}")
 
     tsml_clustering_experiment(
         X_train=X_train,
@@ -126,7 +172,7 @@ def run_clustering_experiment(
     )
 
 
-RUN_LOCALLY = False
+RUN_LOCALLY = True
 
 if __name__ == "__main__":
     """NOTE: To run with command line arguments, set RUN_LOCALLY to False."""

@@ -73,23 +73,31 @@ def load_existing_df(root: Path, distance: str) -> pd.DataFrame:
 
 
 def build_counts(existing: pd.DataFrame) -> Counter:
-    """Count existing rows by (dataset, method, name, c, gamma) for resume logic."""
+    """Count existing rows by (dataset, method, name, c, gamma) for resume logic.
+
+    Normalises missing c/gamma to None so they match dp.get("c")/dp.get("gamma")
+    which also return None when the parameter is not used.
+    """
     if existing.empty:
         return Counter()
-    # Handle missing param columns gracefully
-    c_col = (
-        existing["c"]
-        if "c" in existing.columns
-        else pd.Series([np.nan] * len(existing))
-    )
-    g_col = (
-        existing["gamma"]
-        if "gamma" in existing.columns
-        else pd.Series([np.nan] * len(existing))
-    )
-    idx = list(
-        zip(existing["dataset"], existing["method"], existing["name"], c_col, g_col)
-    )
+
+    def _norm_param_column(col_name: str) -> list:
+        if col_name in existing.columns:
+            col = existing[col_name]
+            # Convert NaN to None, keep real values as-is
+            return [None if pd.isna(v) else v for v in col]
+        # Column absent -> all None
+        return [None] * len(existing)
+
+    c_vals = _norm_param_column("c")
+    g_vals = _norm_param_column("gamma")
+
+    # Make sure key parts are consistently strings for the categorical bits
+    datasets = existing["dataset"].astype(str)
+    methods = existing["method"].astype(str)
+    names = existing["name"].astype(str)
+
+    idx = list(zip(datasets, methods, names, c_vals, g_vals))
     return Counter(idx)
 
 
@@ -236,7 +244,7 @@ if __name__ == "__main__":
         print("RUNNING WITH TEST CONFIG")
         distances_csv = "msm"  # e.g. "soft_msm,soft_dtw"
         averaging_method = (
-            "subgradient"  # e.g. "soft" | "kasba" | "petitjean" | "subgradient"
+            "petitjean"  # e.g. "soft" | "kasba" | "petitjean" | "subgradient"
         )
         REPEATS = 10
         combine_test_train = True
