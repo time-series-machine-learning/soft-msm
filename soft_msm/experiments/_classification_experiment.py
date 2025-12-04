@@ -15,15 +15,18 @@ from soft_msm.experiments._utils import (
 def run_threaded_classification_experiment(
     dataset: str,
     classifier_name: str,
-    gamma: float,
     dataset_path: str,
     results_path: str,
     resample_id: int,
+    gamma: float = None,
 ):
     if classifier_name not in CLASSIFICATION_EXPERIMENT_MODELS:
         raise ValueError(f"Unknown classifier_name '{classifier_name}'")
 
-    model_output_name = f"{classifier_name}-gamma-{gamma}"
+    if gamma is not None:
+        model_output_name = f"{classifier_name}-gamma-{gamma}"
+    else:
+        model_output_name = classifier_name
 
     # Skip if results already exist
     if check_experiment_results_exist(
@@ -79,12 +82,12 @@ if __name__ == "__main__":
         print("RUNNING WITH TEST CONFIG")
 
         dataset = "GunPoint"
-        classifier_name = "KNN-MSM"
+        classifier_name = "NearestCentroid-soft-MBA"
 
         env = load_and_validate_env()
         dataset_path = env["DATASET_PATH"]
         results_path = env["RESULT_PATH"]
-        gamma = 0.1
+        gamma = 1.0
 
         run_threaded_classification_experiment(
             dataset=dataset,
@@ -96,7 +99,7 @@ if __name__ == "__main__":
         )
 
     else:
-        if len(sys.argv) != 6:
+        if len(sys.argv) < 5:
             print(
                 "Usage: python _classification_experiment.py "
                 "<dataset> <classifier_name> <gamma> <dataset_path> <result_path>"
@@ -105,9 +108,12 @@ if __name__ == "__main__":
 
         dataset = str(sys.argv[1])
         classifier_name = str(sys.argv[2])
-        gamma = float(sys.argv[3])
-        dataset_path = str(sys.argv[4])
-        results_path = str(sys.argv[5])
+        dataset_path = str(sys.argv[3])
+        results_path = str(sys.argv[4])
+        if len(sys.argv) == 6:
+            gamma = float(sys.argv[5])
+        else:
+            gamma = None
 
         run_threaded_classification_experiment(
             dataset=dataset,

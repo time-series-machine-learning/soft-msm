@@ -6,9 +6,15 @@ from aeon.clustering import (
     TimeSeriesKShape,
 )
 
+from soft_msm.experiments._classification_models import (
+    DEFAULT_MSM_PARAMS,
+    DEFAULT_SOFT_DBA_PARAMS,
+    DEFAULT_SOFT_MBA_PARAMS,
+)
+
 
 def soft_mba_hard_dist_clusterer(
-    n_clusters: int, random_state: int, n_jobs: int
+    n_clusters: int, gamma: float, random_state: int, n_jobs: int
 ) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
@@ -20,14 +26,14 @@ def soft_mba_hard_dist_clusterer(
         verbose=False,
         random_state=random_state,
         averaging_method="soft",
-        distance_params={"c": 1.0},
-        average_params={"gamma": 1.0, "c": 1.0, "distance": "soft_msm"},
+        distance_params=DEFAULT_MSM_PARAMS,
+        average_params={**DEFAULT_SOFT_MBA_PARAMS, "gamma": gamma},
         n_jobs=n_jobs,
     )
 
 
 def soft_mba_clusterer(
-    n_clusters: int, random_state: int, n_jobs: int
+    n_clusters: int, gamma: float, random_state: int, n_jobs: int
 ) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
@@ -39,14 +45,14 @@ def soft_mba_clusterer(
         verbose=False,
         random_state=random_state,
         averaging_method="soft",
-        distance_params={"gamma": 1.0, "c": 1.0},
-        average_params={"gamma": 1.0, "c": 1.0},
+        distance_params={**DEFAULT_MSM_PARAMS, "gamma": gamma},
+        average_params={**DEFAULT_SOFT_MBA_PARAMS, "gamma": gamma},
         n_jobs=n_jobs,
     )
 
 
 def soft_dba_hard_dist_clusterer(
-    n_clusters: int, random_state: int, n_jobs: int
+    n_clusters: int, gamma: float, random_state: int, n_jobs: int
 ) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
@@ -58,16 +64,13 @@ def soft_dba_hard_dist_clusterer(
         verbose=False,
         random_state=random_state,
         averaging_method="soft",
-        average_params={
-            "gamma": 1.0,
-            "distance": "soft_dtw",
-        },
+        average_params={**DEFAULT_SOFT_DBA_PARAMS, "gamma": gamma},
         n_jobs=n_jobs,
     )
 
 
 def soft_dba_clusterer(
-    n_clusters: int, random_state: int, n_jobs: int
+    n_clusters: int, gamma: float, random_state: int, n_jobs: int
 ) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
@@ -79,13 +82,13 @@ def soft_dba_clusterer(
         verbose=False,
         random_state=random_state,
         averaging_method="soft",
-        distance_params={"gamma": 1.0},
-        average_params={"gamma": 1.0},
+        distance_params={"gamma": gamma},
+        average_params={**DEFAULT_SOFT_DBA_PARAMS, "gamma": gamma},
         n_jobs=n_jobs,
     )
 
 
-def kasba_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseClusterer:
+def kasba_clusterer(n_clusters: int, random_state: int, *args) -> BaseClusterer:
     return KASBA(
         n_clusters=n_clusters,
         distance="msm",
@@ -100,7 +103,9 @@ def kasba_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseClus
     )
 
 
-def dba_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseClusterer:
+def dba_clusterer(
+    n_clusters: int, random_state: int, n_jobs: int, *args
+) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
         init="kmeans++",
@@ -118,7 +123,7 @@ def dba_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseCluste
 
 
 def shape_dba_clusterer(
-    n_clusters: int, random_state: int, n_jobs: int
+    n_clusters: int, random_state: int, n_jobs: int, *args
 ) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
@@ -136,7 +141,9 @@ def shape_dba_clusterer(
     )
 
 
-def mba_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseClusterer:
+def mba_clusterer(
+    n_clusters: int, random_state: int, n_jobs: int, *args
+) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
         init="kmeans++",
@@ -153,7 +160,9 @@ def mba_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseCluste
     )
 
 
-def euclid_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseClusterer:
+def euclid_clusterer(
+    n_clusters: int, random_state: int, n_jobs: int, *args
+) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
         init="kmeans++",
@@ -170,7 +179,9 @@ def euclid_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseClu
     )
 
 
-def msm_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseClusterer:
+def msm_clusterer(
+    n_clusters: int, random_state: int, n_jobs: int, *args
+) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
         init="kmeans++",
@@ -187,7 +198,9 @@ def msm_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseCluste
     )
 
 
-def k_sc_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseClusterer:
+def k_sc_clusterer(
+    n_clusters: int, random_state: int, n_jobs: int, *args
+) -> BaseClusterer:
     return KSpectralCentroid(
         n_clusters=n_clusters,
         max_shift=None,  # This means it will be calculated automatically to length m
@@ -201,7 +214,7 @@ def k_sc_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseClust
     )
 
 
-def kshape_clusterer(n_clusters: int, random_state: int, n_jobs: int) -> BaseClusterer:
+def kshape_clusterer(n_clusters: int, random_state: int, *args) -> BaseClusterer:
     return TimeSeriesKShape(
         n_clusters=n_clusters,
         centroid_init="kmeans++",

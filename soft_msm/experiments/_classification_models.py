@@ -26,7 +26,7 @@ def soft_mba_hard_dist_nearest_centroid(
     return NearestCentroid(
         distance="msm",
         average_method="soft",
-        distance_params={"c": 1.0},
+        distance_params=DEFAULT_MSM_PARAMS,
         average_params={**DEFAULT_SOFT_MBA_PARAMS, "gamma": gamma},
         n_jobs=n_jobs,
     )
@@ -101,7 +101,7 @@ def knn_msm_classifier(gamma: float, random_state: int, n_jobs: int) -> BaseClas
     return KNeighborsTimeSeriesClassifier(
         n_neighbors=1,
         distance="msm",
-        distance_params={"c": 1.0},
+        distance_params=DEFAULT_MSM_PARAMS,
         n_jobs=n_jobs,
     )
 
