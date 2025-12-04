@@ -11,7 +11,7 @@ authors = [{ name = "Christopher Holder" }]
 requires-python = ">=3.10"
 
 dependencies = [
-    "aeon@git+https://github.com/aeon-toolkit/aeon@soft-msm#egg=aeon",
+    "aeon@git+https://github.com/aeon-toolkit/aeon@soft-msm-experiments#egg=aeon",
     "matplotlib",
     "seaborn",
     "tsml-eval@git+https://github.com/time-series-machine-learning/tsml-eval@main#egg=tsml-eval",

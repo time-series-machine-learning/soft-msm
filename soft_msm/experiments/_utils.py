@@ -4,6 +4,7 @@ import numpy as np
 from aeon.datasets import load_from_ts_file
 from aeon.transformations.collection import Normalizer
 from dotenv import find_dotenv, load_dotenv
+from tsml_eval.utils.resampling import stratified_resample_data
 
 
 def check_experiment_results_exist(
@@ -12,27 +13,15 @@ def check_experiment_results_exist(
     combine_test_train: bool,
     path_to_results: str,
     resample_id: int = 0,
-):
-    """Check if the results of the experiment already exist.
-
-    Parameters
-    ----------
-    model_name: str
-        Name of the model.
-    dataset: str
-        Dataset name.
-    combine_test_train: bool
-        Boolean indicating if results for test train or combined should be checked.
-    path_to_results: str
-        Base path to the results.
-    resample_id: int
-        Integer indicating the resample id.
-
+    check_only_test: bool = False,
+) -> bool:
+    """
+    Check if the results of the experiment already exist.
 
     Returns
     -------
     bool
-        Boolean indicating if the results already exist.
+        True if results already exist.
     """
     path_to_train = os.path.join(
         path_to_results,
@@ -50,15 +39,15 @@ def check_experiment_results_exist(
     )
 
     if combine_test_train:
-        if os.path.exists(path_to_train):
-            return True
+        return os.path.exists(path_to_train)
     else:
-        if os.path.exists(path_to_train) and os.path.exists(path_to_test):
-            return True
-    return False
+        if check_only_test:
+            return os.path.exists(path_to_test)
+        return os.path.exists(path_to_train) and os.path.exists(path_to_test)
 
 
-def _normalize_data(X):
+def _normalize_data(X: np.ndarray) -> np.ndarray:
+    """Normalize time series collection data."""
     scaler = Normalizer()
     return scaler.fit_transform(X)
 
@@ -68,30 +57,26 @@ def load_dataset_from_file(
     path_to_data: str,
     normalize: bool = True,
     combine_test_train: bool = False,
+    resample_id: int | None = None,
 ):
-    """Load dataset from file.
+    """Load dataset from file, optionally doing stratified resampling.
 
     Parameters
     ----------
-    dataset_name: str
-        Name of the dataset to load.
-    path_to_data
-        Path to the data.
-    normalize: bool, default=True
+    dataset_name : str
+        Name of the dataset to load. If it is one of the MONSTER datasets,
+        the data is loaded from the MONSTER Hugging Face repo; otherwise,
+        a UCR-style .ts train/test pair is loaded from `path_to_data`.
+    path_to_data : str
+        Path to the data (used for non-MONSTER datasets).
+    normalize : bool, default=True
         Whether to normalize the data.
-    combine_test_train: bool, default=False
+    combine_test_train : bool, default=False
         Whether to combine the test and train data.
-
-    Returns
-    -------
-    X_train: np.ndarray, of shape (n_cases, n_channels, n_timepoints)
-        Training data.
-    y_train: np.ndarray, of shape (n_cases,)
-        Training data labels
-    X_test: np.ndarray, of shape (n_cases, n_channels, n_timepoints)
-        Test data if combine_test_train is False, else None.
-    y_test: np.ndarray, of shape (n_cases,)
-        Test data labels if combine_test_train is False, else None.
+    resample_id : int or None, default=None
+        If > 0 and combine_test_train is False, perform a stratified resample of the
+        original TRAIN/TEST pair using this as the random seed.
+        If 0 or None, use the original train/test split.
     """
     path_to_train_data = os.path.join(
         path_to_data, f"{dataset_name}/{dataset_name}_TRAIN.ts"
@@ -103,6 +88,14 @@ def load_dataset_from_file(
     X_train, y_train = load_from_ts_file(path_to_train_data)
     X_test, y_test = load_from_ts_file(path_to_test_data)
 
+    if not combine_test_train and resample_id is not None and resample_id > 0:
+        X_train, y_train, X_test, y_test = stratified_resample_data(
+            X_train,
+            y_train,
+            X_test,
+            y_test,
+            random_state=resample_id,
+        )
     if combine_test_train:
         X = np.concatenate((X_train, X_test), axis=0)
         y = np.concatenate((y_train, y_test), axis=0)
