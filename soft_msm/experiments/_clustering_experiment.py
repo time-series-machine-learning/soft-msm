@@ -127,6 +127,7 @@ if __name__ == "__main__":
         run_threaded_clustering_experiment(
             dataset=dataset,
             clusterer_name=classifier_name,
+            combine_test_train=combine_test_train,
             gamma=gamma,
             dataset_path=dataset_path,
             results_path=results_path,
