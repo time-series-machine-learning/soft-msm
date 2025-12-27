@@ -81,7 +81,7 @@ def run_threaded_clustering_experiment(
     print(f"[DONE] {model_output_name} (resample {resample_id})")
 
 
-RUN_LOCALLY = True
+RUN_LOCALLY = False
 
 if __name__ == "__main__":
     """NOTE: To run with command line arguments, set RUN_LOCALLY to False."""
