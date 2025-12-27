@@ -88,7 +88,9 @@ def soft_dba_clusterer(
     )
 
 
-def kasba_clusterer(n_clusters: int, random_state: int, *args) -> BaseClusterer:
+def kasba_clusterer(
+    n_clusters: int, random_state: int, *args, **kwargs
+) -> BaseClusterer:
     return KASBA(
         n_clusters=n_clusters,
         distance="msm",
@@ -104,7 +106,7 @@ def kasba_clusterer(n_clusters: int, random_state: int, *args) -> BaseClusterer:
 
 
 def dba_clusterer(
-    n_clusters: int, random_state: int, n_jobs: int, *args
+    n_clusters: int, random_state: int, n_jobs: int, *args, **kwargs
 ) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
@@ -123,7 +125,7 @@ def dba_clusterer(
 
 
 def shape_dba_clusterer(
-    n_clusters: int, random_state: int, n_jobs: int, *args
+    n_clusters: int, random_state: int, n_jobs: int, *args, **kwargs
 ) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
@@ -142,7 +144,7 @@ def shape_dba_clusterer(
 
 
 def mba_clusterer(
-    n_clusters: int, random_state: int, n_jobs: int, *args
+    n_clusters: int, random_state: int, n_jobs: int, *args, **kwargs
 ) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,
@@ -161,7 +163,7 @@ def mba_clusterer(
 
 
 def euclid_clusterer(
-    n_clusters: int, random_state: int, n_jobs: int, *args
+    n_clusters: int, random_state: int, n_jobs: int, *args, **kwargs
 ) -> BaseClusterer:
     return TimeSeriesKMeans(
         n_clusters=n_clusters,

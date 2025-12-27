@@ -81,7 +81,7 @@ def run_threaded_clustering_experiment(
     print(f"[DONE] {model_output_name} (resample {resample_id})")
 
 
-RUN_LOCALLY = False
+RUN_LOCALLY = True
 
 if __name__ == "__main__":
     """NOTE: To run with command line arguments, set RUN_LOCALLY to False."""
@@ -89,7 +89,7 @@ if __name__ == "__main__":
         print("RUNNING WITH TEST CONFIG")
 
         dataset = "GunPoint"
-        classifier_name = "soft-DBA-hard-dist"
+        classifier_name = "MBA"
 
         env = load_and_validate_env()
         dataset_path = env["DATASET_PATH"]
