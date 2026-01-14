@@ -93,7 +93,7 @@ def get_percentage_dataframe(method: str) -> pd.DataFrame:
     if method.lower() not in ["msm", "dtw"]:
         raise ValueError(f"method must be 'msm' or 'dtw', got '{method}'")
 
-    base_dir = Path("full_results/average_results")
+    base_dir = Path("results/averaging")
     csv_file = f"{method.lower()}_final_average.csv"
     csv_path = base_dir / csv_file
 

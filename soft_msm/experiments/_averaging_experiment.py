@@ -117,17 +117,6 @@ GAMMAS = [1.0, 0.1, 0.01, 0.001]
 
 
 def hypergrid(distance: str, base_dist_params: dict, averaging_method: str):
-    """
-    Yield tuples (name, dist_params, avg_params) for the current distance/method.
-
-    - msm: sweep c over MSM_CS
-    - soft_msm / soft_divergence_msm: sweep over c in MSM_CS AND gamma in GAMMAS
-    - soft_* (non-msm): sweep gamma in GAMMAS
-    - all other distances: single config
-
-    NOTE: `name` is fixed as "{averaging_method}_{distance}". Params are separate
-    columns.
-    """
     avg_base = get_averaging_params(averaging_method)
     is_soft = distance.startswith("soft_")
     is_msm = distance.endswith("msm")  # covers "msm", "soft_msm", "soft_divergence_msm"
@@ -174,7 +163,6 @@ def run_once(
     rng_seed: int,
     k: int = 10,
 ) -> dict:
-    """Pick a random class with ≥k samples, take k series, run EBA, compute losses."""
     rng = check_random_state(rng_seed)
     candidates = classes_with_n_samples(y, k)
     if not candidates:
