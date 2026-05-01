@@ -1,6 +1,4 @@
 # soft_msm/torch/_soft_msm_torch.py
-from typing import Tuple
-
 import torch
 from torch import nn
 
@@ -10,7 +8,7 @@ from torch import nn
 def _softmin3(
     a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: float
 ) -> torch.Tensor:
-    """softmin(a,b,c) = -γ logsumexp([-a/γ, -b/γ, -c/γ])"""
+    """Compute softmin(a, b, c)."""
     stack = torch.stack((-a / gamma, -b / gamma, -c / gamma), dim=0)
     return -gamma * torch.logsumexp(stack, dim=0)
 
@@ -47,8 +45,8 @@ def _softmin2_vec_scalar_first(
 
 
 def _between_gate(a: torch.Tensor, b: torch.Tensor, eps: float = 1e-9) -> torch.Tensor:
-    """
-    Smooth, parameter-free gate g in [0,1].
+    """Compute a smooth, parameter-free gate g in [0, 1].
+
     a = x - y_prev, b = x - z_other. g≈1 when a*b<0 (between), g≈0 when a*b>0.
     """
     u = a * b
@@ -108,8 +106,8 @@ def _soft_msm_torch_1d(
     gamma: float = 1.0,  # > 0
     window: int | None = None,  # Sakoe–Chiba half-width
 ) -> torch.Tensor:
-    """
-    Differentiable soft-MSM distance between 1D series x (len n) and y (len m).
+    """Compute differentiable soft-MSM distance between 1D series.
+
     Returns a scalar tensor suitable for .backward().
     """
     if gamma <= 0:
@@ -194,9 +192,7 @@ def _soft_msm_costs_batched(
     c: float,
     gamma: float,
 ) -> torch.Tensor:
-    """
-    Run exact DP independently per channel, sum end costs across channels.
-    """
+    """Run exact DP on channel 0 (matching Aeon's univariate MSM convention)."""
     if x.dim() != 3 or y.dim() != 3:
         raise ValueError("x and y must be (B, C, T)/(B, C, U)")
     if x.shape[0] != y.shape[0] or x.shape[1] != y.shape[1]:
@@ -204,12 +200,8 @@ def _soft_msm_costs_batched(
 
     B, C, _ = x.shape
     costs = torch.zeros(B, dtype=x.dtype, device=x.device)
-    for ch in range(C):
-        # per-batch loop to reuse your 1D kernel; T/U are small in tests so OK
-        for b in range(B):
-            costs[b] = costs[b] + _soft_msm_torch_1d(
-                x[b, ch], y[b, ch], c=c, gamma=gamma
-            )
+    for b in range(B):
+        costs[b] = costs[b] + _soft_msm_torch_1d(x[b, 0], y[b, 0], c=c, gamma=gamma)
     return costs  # (B,)
 
 
@@ -217,50 +209,45 @@ def _soft_msm_costs_batched(
 
 
 def _soft_msm_costs_from_M_batched(
-    M: torch.Tensor,  # (B, C, T, U) diagonal-match matrix (leaf)
+    M: torch.Tensor,  # (B, T, U) diagonal-match matrix (leaf)
     x: torch.Tensor,  # (B, C, T) detached (for transitions)
     y: torch.Tensor,  # (B, C, U) detached
     c: float,
     gamma: float,
 ) -> torch.Tensor:
-    """
-    Same DP but with a provided diagonal-match matrix M instead of (xi-yj)^2;
-    used to obtain E = d s / d M via autograd, summed over channels.
-    """
-    if M.dim() != 4 or x.dim() != 3 or y.dim() != 3:
-        raise ValueError("M must be (B,C,T,U), x=(B,C,T), y=(B,C,U)")
-    B, C, T, U = M.shape
+    """Run DP with provided diagonal-match matrix M."""
+    if M.dim() != 3 or x.dim() != 3 or y.dim() != 3:
+        raise ValueError("M must be (B,T,U), x=(B,C,T), y=(B,C,U)")
+    B, T, U = M.shape
     costs = torch.zeros(B, dtype=M.dtype, device=M.device)
 
     for b in range(B):
-        for ch in range(C):
-            # full DP with M for matches
-            cm = torch.full((T, U), float("inf"), dtype=M.dtype, device=M.device)
-            cm[0, 0] = M[b, ch, 0, 0]
-            # first column
-            for i in range(1, T):
-                trans_v = _trans_cost(
-                    x[b, ch, i], x[b, ch, i - 1], y[b, ch, 0], c=c, gamma=gamma
-                )
-                cm[i, 0] = cm[i - 1, 0] + trans_v
-            # first row
+        cm = torch.full((T, U), float("inf"), dtype=M.dtype, device=M.device)
+        cm[0, 0] = M[b, 0, 0]
+        # first column
+        for i in range(1, T):
+            trans_v = _trans_cost(
+                x[b, 0, i], x[b, 0, i - 1], y[b, 0, 0], c=c, gamma=gamma
+            )
+            cm[i, 0] = cm[i - 1, 0] + trans_v
+        # first row
+        for j in range(1, U):
+            trans_h = _trans_cost(
+                y[b, 0, j], y[b, 0, j - 1], x[b, 0, 0], c=c, gamma=gamma
+            )
+            cm[0, j] = cm[0, j - 1] + trans_h
+        # interior
+        for i in range(1, T):
+            xi = x[b, 0, i]
+            xim1 = x[b, 0, i - 1]
             for j in range(1, U):
-                trans_h = _trans_cost(
-                    y[b, ch, j], y[b, ch, j - 1], x[b, ch, 0], c=c, gamma=gamma
-                )
-                cm[0, j] = cm[0, j - 1] + trans_h
-            # interior
-            for i in range(1, T):
-                xi = x[b, ch, i]
-                xim1 = x[b, ch, i - 1]
-                for j in range(1, U):
-                    yj = y[b, ch, j]
-                    yjm1 = y[b, ch, j - 1]
-                    d1 = cm[i - 1, j - 1] + M[b, ch, i, j]
-                    d2 = cm[i - 1, j] + _trans_cost(xi, xim1, yj, c=c, gamma=gamma)
-                    d3 = cm[i, j - 1] + _trans_cost(yj, yjm1, xi, c=c, gamma=gamma)
-                    cm[i, j] = _softmin3_scalar(d1, d2, d3, gamma)
-            costs[b] = costs[b] + cm[T - 1, U - 1]
+                yj = y[b, 0, j]
+                yjm1 = y[b, 0, j - 1]
+                d1 = cm[i - 1, j - 1] + M[b, i, j]
+                d2 = cm[i - 1, j] + _trans_cost(xi, xim1, yj, c=c, gamma=gamma)
+                d3 = cm[i, j - 1] + _trans_cost(yj, yjm1, xi, c=c, gamma=gamma)
+                cm[i, j] = _softmin3_scalar(d1, d2, d3, gamma)
+        costs[b] = costs[b] + cm[T - 1, U - 1]
     return costs  # (B,)
 
 
@@ -272,12 +259,11 @@ def _device_supports_fp64(t: torch.Tensor) -> bool:
 
 
 class SoftMSMLoss(nn.Module):
-    """
-    Soft-MSM loss (batched, multichannel), mirroring Aeon/Numba:
-      - exact per-channel DP
-      - sum channel end-costs
-      - CUDA/CPU: float64-parity (if you feed float64)
-      - MPS: value from CPU-float64 (two-step move), gradients from device graph
+    """Compute Soft-MSM loss (batched, multichannel), mirroring Aeon/Numba.
+
+    - exact channel-0 DP
+    - CUDA/CPU: float64-parity (if you feed float64)
+    - MPS: value from CPU-float64 (two-step move), gradients from device graph
     """
 
     def __init__(self, c: float = 1.0, gamma: float = 1.0, reduction: str = "mean"):
@@ -325,27 +311,26 @@ def soft_msm_alignment_matrix(
     c: float = 1.0,
     gamma: float = 1.0,
 ) -> tuple[torch.Tensor, torch.Tensor]:
-    """
-    Expected diagonal-match occupancy E and Soft-MSM cost (detached).
-      E : (B, T, U), summed over channels (matches Aeon)
-      s : (B,) float64 (for equivalence)
+    """Compute expected diagonal-match occupancy E and Soft-MSM cost.
+
+    E : (B, T, U), channel 0 only (matches Aeon)
+    s : (B,) float64 (for equivalence)
     """
     # exact equivalence on CPU float64
     x64 = x.detach().to("cpu").to(torch.float64)
     y64 = y.detach().to("cpu").to(torch.float64)
-    # Leaf: per-channel diagonal matches
-    M = (x64.unsqueeze(-1) - y64.unsqueeze(-2)) ** 2  # (B, C, T, U)
+    # Leaf: channel-0 diagonal matches (B, T, U)
+    M = (x64[:, 0, :, None] - y64[:, 0, None, :]) ** 2
     M.requires_grad_(True)
 
     s64 = _soft_msm_costs_from_M_batched(M, x64, y64, c=c, gamma=gamma)  # (B,)
-    (E_per_channel,) = torch.autograd.grad(
-        s64.sum(), M, retain_graph=False, create_graph=False
-    )
-    E64 = E_per_channel.sum(dim=1)  # (B, T, U)
+    (E64,) = torch.autograd.grad(s64.sum(), M, retain_graph=False, create_graph=False)
 
-    # Move back to caller device/dtype (values only; grads not needed)
+    # Move back to caller device (values only; grads not needed). MPS cannot
+    # materialize float64 tensors, so keep the scalar cost in the input dtype.
     E = E64.to(x.device, dtype=x.dtype).detach()
-    s = s64.to(x.device, dtype=torch.float64).detach()
+    s_dtype = torch.float64 if _device_supports_fp64(x) else x.dtype
+    s = s64.to(x.device, dtype=s_dtype).detach()
     return E, s
 
 
@@ -362,20 +347,18 @@ def soft_msm_grad_x(
     Returns
     -------
       dx : (B, C, T) in x.dtype on x.device
-      s  : (B,) float64 on x.device
+      s  : (B,) float64 on CPU/CUDA, or x.dtype on devices without float64
     """
-    x64 = x.detach().to("cpu").to(torch.float64).clone().requires_grad_(True)
-    y64 = y.detach().to("cpu").to(torch.float64)
+    with torch.enable_grad():
+        x64 = x.detach().to("cpu").to(torch.float64).clone().requires_grad_(True)
+        y64 = y.detach().to("cpu").to(torch.float64)
 
-    s64 = _soft_msm_costs_batched(x64, y64, c=c, gamma=gamma)  # (B,)
-    (dx64,) = torch.autograd.grad(
-        s64.sum(), x64, retain_graph=False, create_graph=False
-    )
+        s64 = _soft_msm_costs_batched(x64, y64, c=c, gamma=gamma)  # (B,)
+        (dx64,) = torch.autograd.grad(
+            s64.sum(), x64, retain_graph=False, create_graph=False
+        )
 
     dx = dx64.to(x.device, dtype=x.dtype)
-    s = s64.to(x.device, dtype=torch.float64)
+    s_dtype = torch.float64 if _device_supports_fp64(x) else x.dtype
+    s = s64.to(x.device, dtype=s_dtype)
     return dx, s
-
-
-def soft_msm_alignment_matrix(**kwargs):
-    pass

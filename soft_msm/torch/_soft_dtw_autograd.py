@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Tuple
-
 import torch
 
 from soft_msm.torch._utils import _pairwise_sq_dists, _softmin3, _softmin3_weights
@@ -123,10 +121,3 @@ if __name__ == "__main__":
     dy, _ = soft_dtw_grad_y(x, y, gamma)
 
     print("E:", E.shape, "s:", s.shape, "dx:", dx.shape, "dy:", dy.shape)
-
-    from aeon.distances.elastic.soft._soft_dtw import (
-        soft_dtw_alignment_matrix,
-        soft_dtw_cost_matrix,
-        soft_dtw_distance,
-        soft_dtw_grad_x,
-    )

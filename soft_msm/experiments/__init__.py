@@ -3,11 +3,12 @@
 This module contains the code ran for each of the experiments outlined in the paper.
 """
 
-from typing import List
-
 
 class Solution:
+    """Find words whose phone keypad encoding appears in a phone number."""
+
     def wordsInPhoneNumber(self, phone: str, words: list[str]) -> list[str]:
+        """Return words whose keypad encoding appears in the phone number."""
         # Traditional keypad mapping
         lookup = {
             "a": "2",

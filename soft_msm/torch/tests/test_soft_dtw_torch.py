@@ -1,5 +1,3 @@
-import math
-
 import pytest
 import torch
 from aeon.distances.elastic.soft import (

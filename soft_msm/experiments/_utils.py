@@ -132,13 +132,13 @@ def get_distance_default_params(dist_name: str, X: np.ndarray) -> dict:
                 "c": 1.0,
                 "gamma": 0.1,
             }
-        if dist_name == "soft_divergence_dtw":
-            return {"gamma": 0.001}
-        if dist_name == "soft_divergence_msm":
-            return {
-                "c": 1.0,
-                "gamma": 1.0,
-            }
+        # if dist_name == "soft_divergence_dtw":
+        #     return {"gamma": 0.001}
+        # if dist_name == "soft_divergence_msm":
+        #     return {
+        #         "c": 1.0,
+        #         "gamma": 1.0,
+        #     }
         else:
             return {}
     if dist_name == "lcss":
@@ -216,8 +216,7 @@ def validate_distance_vs_averaging_method(distance: str, averaging_method: str) 
     if averaging_method == "soft" and not is_soft_dist:
         raise ValueError(
             f'averaging_method="soft" requires a soft distance (got "{distance}"). '
-            'Use one of: "soft_msm", "soft_dtw", "soft_divergence_msm", '
-            '"soft_divergence_dtw".'
+            'Use one of: "soft_msm", "soft_dtw".'
         )
     if averaging_method != "soft" and is_soft_dist:
         raise ValueError(

@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import torch
 from torch import nn
 
@@ -13,7 +11,8 @@ def _soft_dtw_from_D(D: torch.Tensor, gamma: float) -> torch.Tensor:
     Parameters
     ----------
     D : torch.Tensor
-        Local squared distance matrix of shape (n_cases, n_timepoints_x, n_timepoints_y).
+        Local squared distance matrix of shape
+        (n_cases, n_timepoints_x, n_timepoints_y).
     gamma : float
         Smoothness parameter for the soft minimum.
 
@@ -23,20 +22,21 @@ def _soft_dtw_from_D(D: torch.Tensor, gamma: float) -> torch.Tensor:
         Soft-DTW costs of shape (n_cases,).
     """
     B, T, U = D.shape
-    R = torch.full((B, 2, U + 1), float("inf"), dtype=D.dtype, device=D.device)
-    R[:, 0, 0] = 0.0
+    inf = torch.full((B,), float("inf"), dtype=D.dtype, device=D.device)
+    zero = torch.zeros((B,), dtype=D.dtype, device=D.device)
+    prev_row = torch.stack([zero, *[inf] * U], dim=1)
 
     for i in range(1, T + 1):
-        prev = (i - 1) & 1
-        curr = i & 1
-        R[:, curr, 0] = float("inf")
+        curr_values = [inf]
         for j in range(1, U + 1):
-            up = R[:, prev, j]
-            diag = R[:, prev, j - 1]
-            left = R[:, curr, j - 1]
-            R[:, curr, j] = D[:, i - 1, j - 1] + _softmin3(up, diag, left, gamma)
+            up = prev_row[:, j]
+            diag = prev_row[:, j - 1]
+            left = curr_values[j - 1]
+            value = D[:, i - 1, j - 1] + _softmin3(up, diag, left, gamma)
+            curr_values.append(value)
+        prev_row = torch.stack(curr_values, dim=1)
 
-    return R[:, T & 1, U]
+    return prev_row[:, U]
 
 
 class SoftDTWLoss(nn.Module):
@@ -107,7 +107,8 @@ def soft_dtw_alignment_matrix(
     Returns
     -------
     Tuple[torch.Tensor, torch.Tensor]
-        E : Expected alignment matrix of shape (n_cases, n_timepoints_x, n_timepoints_y).
+        E : Expected alignment matrix of shape
+            (n_cases, n_timepoints_x, n_timepoints_y).
         s : Soft-DTW costs of shape (n_cases,).
     """
     with torch.enable_grad():

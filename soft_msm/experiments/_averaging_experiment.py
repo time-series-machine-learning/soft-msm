@@ -119,7 +119,7 @@ GAMMAS = [1.0, 0.1, 0.01, 0.001]
 def hypergrid(distance: str, base_dist_params: dict, averaging_method: str):
     avg_base = get_averaging_params(averaging_method)
     is_soft = distance.startswith("soft_")
-    is_msm = distance.endswith("msm")  # covers "msm", "soft_msm", "soft_divergence_msm"
+    is_msm = distance.endswith("msm")
 
     base_name = f"{averaging_method}_{distance}"
 
@@ -190,8 +190,8 @@ def run_once(
     soft_loss = float(loss) if distance.startswith("soft_") else 0.0
     if distance.startswith("soft_"):
         base = distance[len("soft_") :]
-        if base.startswith("divergence_"):
-            base = base[len("divergence_") :]
+        # if base.startswith("divergence_"):
+        #     base = base[len("divergence_") :]
         base_params = {k: v for k, v in dist_params.items() if k != "gamma"}
         orig = float(
             np.sum(pairwise_distance(S, avg, method=base, n_jobs=-1, **base_params))

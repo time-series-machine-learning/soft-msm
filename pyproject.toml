@@ -59,8 +59,16 @@ packages = ["soft_msm"]
 [tool.ruff.lint]
 select = ["D"]
 
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**/*.py" = ["D100", "D103", "D104"]
+
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
+
+[tool.flake8]
+per-file-ignores = [
+    "soft_msm/jax/tests/test_*.py:E402",
+]
 
 [tool.pytest.ini_options]
 testpaths = [

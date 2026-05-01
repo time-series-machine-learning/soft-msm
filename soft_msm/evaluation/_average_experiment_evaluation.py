@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-"""
-Script to generate LaTeX tables comparing soft methods to baseline methods.
-"""
+"""Generate LaTeX tables comparing soft methods to baseline methods."""
 
 import csv
 from collections import defaultdict
@@ -203,7 +201,7 @@ def generate_latex_from_dataframe(df: pd.DataFrame, method: str) -> str:
 
 
 def main():
-    """Example usage of the functions."""
+    """Run an example workflow using the evaluation functions."""
     # Process DTW data
     print("Processing DTW data...")
     dtw_df = get_percentage_dataframe("dtw")
@@ -223,7 +221,7 @@ def main():
     with open(output_dir / "msm_table.tex", "w") as f:
         f.write(msm_table)
 
-    print(f"\nGenerated tables:")
+    print("\nGenerated tables:")
     print(f"  - {output_dir / 'dtw_table.tex'}")
     print(f"  - {output_dir / 'msm_table.tex'}")
 

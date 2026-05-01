@@ -80,14 +80,15 @@ def test_soft_msm_grad_x_equivalence(device, gamma, c):
     y = torch.randn(1, C, U, device=device, dtype=torch.float32)
 
     dx_torch, s_torch = soft_msm_grad_x(x, y, c=c, gamma=gamma)
-    dx_torch = dx_torch.squeeze(0).detach().cpu().numpy()
+    # Aeon MSM uses channel 0 only; compare channel 0 of gradient
+    dx_torch_ch0 = dx_torch.squeeze(0)[0].detach().cpu().numpy()
     s_torch = s_torch.squeeze(0).item()
 
     x_np = x.cpu().numpy().squeeze(0)
     y_np = y.cpu().numpy().squeeze(0)
     dx_aeon, s_aeon = aeon_soft_msm_grad_x(x_np, y_np, c=c, gamma=gamma)
 
-    assert check_arrays_close(dx_torch, dx_aeon)
+    assert check_arrays_close(dx_torch_ch0, dx_aeon)
     assert check_values_close(s_torch, s_aeon)
 
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import torch
 import torch.nn as nn
@@ -70,10 +70,10 @@ for opt_name, (opt_cls, opt_kwargs) in OPTIMIZERS.items():
         key = f"MLP-{opt_name}-{loss_name}"
 
         def _make_builder(
-            opt_cls=opt_cls,
-            opt_kwargs=opt_kwargs,
-            loss_factory=loss_factory,
-            loss_kwargs=loss_kwargs,
+            optimizer_class=opt_cls,
+            optimizer_options=opt_kwargs,
+            loss_builder=loss_factory,
+            loss_options=loss_kwargs,
         ):
             def builder(
                 horizon: int,
@@ -84,15 +84,15 @@ for opt_name, (opt_cls, opt_kwargs) in OPTIMIZERS.items():
                 max_epochs: int = 50,
                 batch_size: int = 32,
             ):
-                loss_fn = loss_factory(**loss_kwargs)
+                loss_fn = loss_builder(**loss_options)
                 return mlp_forecaster(
                     horizon=horizon,
                     window=window,
                     axis=axis,
                     random_state=random_state,
                     device=device,
-                    optimizer_cls=opt_cls,
-                    optimizer_kwargs=opt_kwargs,
+                    optimizer_cls=optimizer_class,
+                    optimizer_kwargs=optimizer_options,
                     loss_fn=loss_fn,
                     max_epochs=max_epochs,
                     batch_size=batch_size,

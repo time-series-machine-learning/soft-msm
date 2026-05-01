@@ -1,5 +1,3 @@
-from typing import Tuple
-
 import torch
 
 
@@ -23,12 +21,11 @@ def _softmin2(a: torch.Tensor, b: torch.Tensor, gamma: float) -> torch.Tensor:
     return -gamma * torch.logsumexp(-v / gamma, dim=0)
 
 
-@torch.jit.ignore
 def _softmin3(
     a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: float
 ) -> torch.Tensor:
     """
-    Smooth minimum of three tensors (allocation-free), using logaddexp chaining.
+    Smooth minimum of three tensors using logsumexp.
 
     softmin(a,b,c) = -gamma * log( exp(-a/g) + exp(-b/g) + exp(-c/g) )
 
@@ -44,19 +41,14 @@ def _softmin3(
     torch.Tensor
         Same shape as inputs.
     """
-    inv_g = 1.0 / gamma
-    x = -a * inv_g
-    y = -b * inv_g
-    z = -c * inv_g
-    s = torch.logaddexp(torch.logaddexp(x, y), z)
-    return -gamma * s
+    stack = torch.stack((-a / gamma, -b / gamma, -c / gamma), dim=0)
+    return -gamma * torch.logsumexp(stack, dim=0)
 
 
 def _softmin3_weights(
     a: torch.Tensor, b: torch.Tensor, c: torch.Tensor, gamma: float
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """
-    Derivatives of softmin(a,b,c) w.r.t. (a,b,c).
+    """Compute derivatives of softmin(a, b, c).
 
     For softmin = -g*logsumexp([-a/g, -b/g, -c/g]),
     the partial derivatives are a softmax over [-a/g, -b/g, -c/g].
@@ -104,7 +96,8 @@ def _pairwise_sq_dists(x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
 
 
 def choose_device(prefer: str = "auto") -> torch.device:
-    """
+    """Choose a torch device.
+
     prefer:
       - "auto": mps -> cuda -> cpu
       - "mps" / "cuda" / "cpu": force
